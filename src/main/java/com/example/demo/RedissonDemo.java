@@ -17,20 +17,20 @@ public class RedissonDemo {
 //public synchronized void test(String id) {
     public void test (String id){
         System.out.println("id:" + id + "=======" + Thread.currentThread().getName() + " coming");
-
+        //获取锁
         RLock lock = redissonClient.getLock(REDIS_CACHE_KEY + id);
 
         try {
             //设置lock超时时间 2 秒
             lock.lock(2, TimeUnit.SECONDS);
             //以下是业务逻辑
-            System.out.println("id:" + id + "=======" + Thread.currentThread().getName() + "is locked");
+            System.out.println("id:" + id + "=======" + Thread.currentThread().getName() + " is locked");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             //释放锁
             lock.unlock();
-            System.out.println("id:" + id + "=======" + Thread.currentThread().getName() + "is unlock");
+            System.out.println("id:" + id + "=======" + Thread.currentThread().getName() + " is unlock");
         }
     }
 }

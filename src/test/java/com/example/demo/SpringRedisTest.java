@@ -34,7 +34,7 @@ public class SpringRedisTest extends DemoApplicationTests {
             this.id = id;
         }
 
-
+//Tread.start()方法会来调用run()方法
         @Override
         public void run() {
             redissonDemo.test(id);
