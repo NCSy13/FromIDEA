@@ -1,5 +1,9 @@
 package com.example.demo;
+/*
+spring-data-Redis为spring-data模块中对redis的支持部分，简称为“SDR”
 
+利用StringRedisTemplate去实现一个分布式锁
+ */
 import org.apache.commons.lang.StringUtils;
 //import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +18,10 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class DistributedLockHandler {
     //private static final Logger logger = (Logger) LoggerFactory.getLogger(DistributedLockHandler.class);
-    private final static long LOCK_EXPIRE = 30 * 1000L;//单个业务持有锁时间30s，防止死锁
+    private final static long LOCK_EXPIRE = 30 * 1000L;//单个业务持有锁时间30s，防止死锁 , 30s之后如果业务还没执行完，锁也会被释放
     private final static long LOCK_TRY_INTERVAL = 30L; // 默认30ms尝试一次
-    private final static long LOCK_TRY_TIMEOUT = 20 * 1000L; //默认尝试20s
+    private final static long LOCK_TRY_TIMEOUT = 2 * 1000L; //默认尝试20s
+   // private int trytimes = 0;             //尝试次数
 
     @Autowired
     private StringRedisTemplate template;
@@ -84,22 +89,23 @@ public class DistributedLockHandler {
             }
             long startTime = System.currentTimeMillis();
             do{
-                System.out.println("1111111111111111");
-                System.out.println(lock.getName());
-                System.out.println(!template.hasKey(lock.getName()));
-                System.out.println("2222222222222222");
-                //if (!template.hasKey(lock.getName())) {
-                if(true){
+                //通过锁的Name判断是否已经存在锁
+                if (!template.hasKey(lock.getName())) {
                     ValueOperations<String, String> ops = template.opsForValue();
+                    //设置变量值的过期时间
                     ops.set(lock.getName(), lock.getValue(), lockExpireTime, TimeUnit.MILLISECONDS);
                     return true;
                 } else {//存在锁
-                    System.out.println("锁已经存在");
+                   // trytimes++;
+                    //System.out.println(lock.getName()+"锁已经存在"+",失败第" + trytimes + "次");
+                    System.out.println(lock.getName()+"锁已经存在");
                     //logger.debug("lock is exist!！！");
                 }
                 if (System.currentTimeMillis() - startTime > timeout) {//尝试超过了设定值之后直接跳出循环
+                    System.out.println("锁超时");
                     return false;
                 }
+
                 Thread.sleep(tryInterval);
             }
             while (template.hasKey(lock.getName())) ;
@@ -117,6 +123,7 @@ public class DistributedLockHandler {
     public void releaseLock(Lock lock) {
         if (!StringUtils.isEmpty(lock.getName())) {
             template.delete(lock.getName());
+            System.out.println(lock.getName()+"锁已经释放");
         }
     }
 
